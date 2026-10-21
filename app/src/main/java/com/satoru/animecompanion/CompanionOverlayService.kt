@@ -189,6 +189,49 @@ private class CompanionView(context: android.content.Context) : View(context) {
         val bounce = if (isDancing) abs(sin(elapsed * 5f)) * -10f else sin(elapsed * 2.2f) * 2.2f
         canvas.translate(0f, bounce)
 
+        // Optional cut-out rig: each layer is a transparent PNG on the same 220x300 canvas.
+        // If the full set is present, animate hair, arms and skirt around separate pivots.
+        // Until then, keep using the original sprite below so no assets disappear.
+        val rigBackHair = layerBitmap("companion_back_hair")
+        val rigLegs = layerBitmap("companion_legs")
+        val rigBody = layerBitmap("companion_body")
+        val rigArms = layerBitmap("companion_arms")
+        val rigSkirt = layerBitmap("companion_skirt")
+        val rigFace = layerBitmap("companion_face")
+        val rigFrontHair = layerBitmap("companion_front_hair")
+        if (rigBackHair != null && rigLegs != null && rigBody != null && rigArms != null &&
+            rigSkirt != null && rigFace != null && rigFrontHair != null) {
+            val target = RectF(0f, 0f, 220f, 300f)
+            fun layer(bitmap: android.graphics.Bitmap, pivotX: Float = 110f, pivotY: Float = 150f,
+                      angle: Float = 0f, sx: Float = 1f, sy: Float = 1f) {
+                canvas.save()
+                canvas.rotate(angle, pivotX, pivotY)
+                canvas.scale(sx, sy, pivotX, pivotY)
+                canvas.drawBitmap(bitmap, null, target, p)
+                canvas.restore()
+            }
+            p.alpha = 255
+            layer(rigBackHair, 110f, 55f, sin(elapsed * if (isDancing) 8f else 2.2f) * if (isDancing) 5f else 1.2f)
+            layer(rigLegs)
+            val breathe = sin(elapsed * 2.4f)
+            layer(rigBody, 110f, 145f, sin(elapsed * if (isDancing) 8f else 1.4f) * if (isDancing) 3f else 0.5f,
+                1f + breathe * 0.008f, 1f - breathe * 0.006f)
+            layer(rigSkirt, 110f, 178f, sin(elapsed * if (isDancing) 10f else 2.8f) * if (isDancing) 4.5f else 1.1f,
+                1f + abs(sin(elapsed * if (isDancing) 10f else 2.8f)) * if (isDancing) 0.018f else 0.004f, 1f)
+            layer(rigArms, 110f, 133f, sin(elapsed * if (isDancing) 9f else 1.8f) * if (isDancing) 9f else 1.5f)
+            layer(rigFace, 110f, 86f, sin(elapsed * 1.5f) * 0.5f)
+            layer(rigFrontHair, 110f, 52f, sin(elapsed * if (isDancing) 8f else 2.4f) * if (isDancing) 2.8f else 0.7f)
+            if (isDancing) {
+                p.color = Color.rgb(255, 158, 220); p.alpha = 220
+                canvas.drawCircle(25f, 88f + sin(elapsed * 5f) * 7f, 4f, p)
+                canvas.drawCircle(193f, 115f + sin(elapsed * 6f) * 8f, 5f, p)
+            }
+            p.alpha = 255
+            canvas.restore()
+            postInvalidateDelayed(33)
+            return
+        }
+
         // Use the custom transparent character sprite when available; otherwise retain the fallback.
         val sprite = characterBitmap
         if (sprite != null) {
@@ -338,6 +381,11 @@ private class CompanionView(context: android.content.Context) : View(context) {
         }
         canvas.restore()
         postInvalidateDelayed(45)
+    }
+
+    private fun layerBitmap(name: String): android.graphics.Bitmap? {
+        val id = resources.getIdentifier(name, "drawable", context.packageName)
+        return if (id == 0) null else BitmapFactory.decodeResource(resources, id)
     }
 
     private fun drawHeart(canvas: Canvas, x: Float, y: Float, size: Float, paint: Paint) {
