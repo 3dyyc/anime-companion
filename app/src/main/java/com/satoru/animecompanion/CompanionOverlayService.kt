@@ -19,6 +19,7 @@ import android.view.Gravity
 import android.view.MotionEvent
 import android.view.View
 import android.view.WindowManager
+import kotlin.math.abs
 import kotlin.math.sin
 
 class CompanionOverlayService : Service() {
