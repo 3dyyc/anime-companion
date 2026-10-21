@@ -207,22 +207,23 @@ private class CompanionView(context: android.content.Context) : View(context) {
             p.alpha = 255
             canvas.drawBitmap(sprite, null, target, p)
 
-            // Вторичная физика для плоского спрайта: локальная инерция верхней части
-            // и ткани юбки. Это предварительная имитация; отдельные слои дадут лучший результат.
-            val motion = if (isDancing) 1f else 0.38f
-            val chestPulse = sin(elapsed * if (isDancing) 8.5f else 2.7f) * 0.012f * motion
+            // Локальная инерция волос: слегка смещаем только верхнюю область спрайта.
+            // Это временная имитация до подготовки настоящих отдельных слоёв волос.
+            val hairSway = sin(elapsed * if (isDancing) 7.5f else 2.1f) * if (isDancing) 2.8f else 0.9f
             canvas.save()
-            canvas.clipRect(62f, 67f, 158f, 139f)
-            canvas.scale(1f + chestPulse * 0.35f, 1f + chestPulse, 110f, 105f)
+            canvas.clipRect(24f, 0f, 196f, 78f)
+            canvas.rotate(hairSway * 0.45f, 110f, 64f)
+            canvas.translate(hairSway, 0f)
             canvas.drawBitmap(sprite, null, target, p)
             canvas.restore()
 
-            // Небольшой колыхающийся край юбки — комедийная тканевая физика без
-            // откровенных ракурсов. Амплитуда заметнее во время танца.
-            val skirtFlutter = sin(elapsed * if (isDancing) 11f else 3.4f) * (if (isDancing) 1.8f else 0.55f)
+            // Движение ткани юбки: небольшая инерция по ритму шага/танца.
+            // Ракурс остаётся безопасным; это не замена настоящему cloth-rig.
+            val skirtFlutter = sin(elapsed * if (isDancing) 10.5f else 3.2f) * if (isDancing) 2.2f else 0.65f
             canvas.save()
-            canvas.clipRect(64f, 143f, 155f, 181f)
-            canvas.rotate(skirtFlutter, 110f, 155f)
+            canvas.clipRect(58f, 140f, 162f, 184f)
+            canvas.rotate(skirtFlutter, 110f, 153f)
+            canvas.translate(skirtFlutter * 0.35f, 0f)
             canvas.drawBitmap(sprite, null, target, p)
             canvas.restore()
 
