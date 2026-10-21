@@ -207,6 +207,31 @@ private class CompanionView(context: android.content.Context) : View(context) {
             p.alpha = 255
             canvas.drawBitmap(sprite, null, target, p)
 
+            // Реакции лица поверх исходного спрайта: смущение, игривость и удивление.
+            // Координаты рассчитаны относительно области 220x300 с персонажем в полный рост.
+            when (mood) {
+                1 -> {
+                    p.color = Color.rgb(255, 105, 160)
+                    p.alpha = (115 + abs(sin(elapsed * 2.8f)) * 45).toInt()
+                    canvas.drawOval(RectF(86f, 47f, 101f, 53f), p)
+                    canvas.drawOval(RectF(130f, 47f, 145f, 53f), p)
+                }
+                2 -> {
+                    // Игривые сердечки у головы — кокетливая реакция на повторное касание.
+                    p.color = Color.rgb(255, 92, 174)
+                    p.alpha = 235
+                    val bob = sin(elapsed * 4f) * 3f
+                    drawHeart(canvas, 78f, 30f + bob, 5f, p)
+                    drawHeart(canvas, 148f, 35f - bob, 4f, p)
+                }
+                3 -> {
+                    p.color = Color.rgb(115, 239, 255)
+                    p.alpha = 230
+                    canvas.drawCircle(75f, 36f + sin(elapsed * 5f) * 2f, 2.5f, p)
+                    canvas.drawCircle(151f, 43f + sin(elapsed * 4f) * 2f, 3f, p)
+                }
+            }
+
             if (isDancing) {
                 // Небольшие искорки подчёркивают танец, не закрывая персонажа.
                 p.color = Color.rgb(255, 158, 220)
@@ -293,6 +318,16 @@ private class CompanionView(context: android.content.Context) : View(context) {
         }
         canvas.restore()
         postInvalidateDelayed(45)
+    }
+
+    private fun drawHeart(canvas: Canvas, x: Float, y: Float, size: Float, paint: Paint) {
+        val heart = Path().apply {
+            moveTo(x, y + size)
+            cubicTo(x - size * 1.7f, y, x - size, y - size, x, y - size * 0.25f)
+            cubicTo(x + size, y - size, x + size * 1.7f, y, x, y + size)
+            close()
+        }
+        canvas.drawPath(heart, paint)
     }
 
     private fun setColor(paint: Paint, color: Int): Paint { paint.color = color; return paint }
