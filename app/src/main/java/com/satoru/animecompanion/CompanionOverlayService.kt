@@ -207,6 +207,25 @@ private class CompanionView(context: android.content.Context) : View(context) {
             p.alpha = 255
             canvas.drawBitmap(sprite, null, target, p)
 
+            // Вторичная физика для плоского спрайта: локальная инерция верхней части
+            // и ткани юбки. Это предварительная имитация; отдельные слои дадут лучший результат.
+            val motion = if (isDancing) 1f else 0.38f
+            val chestPulse = sin(elapsed * if (isDancing) 8.5f else 2.7f) * 0.012f * motion
+            canvas.save()
+            canvas.clipRect(62f, 67f, 158f, 139f)
+            canvas.scale(1f + chestPulse * 0.35f, 1f + chestPulse, 110f, 105f)
+            canvas.drawBitmap(sprite, null, target, p)
+            canvas.restore()
+
+            // Небольшой колыхающийся край юбки — комедийная тканевая физика без
+            // откровенных ракурсов. Амплитуда заметнее во время танца.
+            val skirtFlutter = sin(elapsed * if (isDancing) 11f else 3.4f) * (if (isDancing) 1.8f else 0.55f)
+            canvas.save()
+            canvas.clipRect(64f, 143f, 155f, 181f)
+            canvas.rotate(skirtFlutter, 110f, 155f)
+            canvas.drawBitmap(sprite, null, target, p)
+            canvas.restore()
+
             // Реакции лица поверх исходного спрайта: смущение, игривость и удивление.
             // Координаты рассчитаны относительно области 220x300 с персонажем в полный рост.
             when (mood) {
