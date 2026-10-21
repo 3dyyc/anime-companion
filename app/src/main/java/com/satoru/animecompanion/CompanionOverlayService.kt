@@ -248,12 +248,36 @@ private class CompanionView(context: android.content.Context) : View(context) {
             canvas.translate(sway, 0f)
             canvas.scale(bodyScaleX, bodyScaleY, 110f, 150f)
             p.alpha = 255
-            canvas.drawBitmap(sprite, null, target, p)
 
-            // Важно: не дублируем цельный спрайт внутри обрезанных областей.
-            // Такой приём создавал ореолы/двойные контуры, но не двигал отдельные части тела.
-            // Пока у персонажа один плоский PNG, движение волос и ткани передаётся
-            // небольшим наклоном/переносом всего силуэта. Независимый rig добавим слоями.
+            // Мягкая деформация сетки позволяет оживить отдельные зоны даже у одного PNG:
+            // кончики волос слегка колышутся, а край юбки реагирует на шаги и танец.
+            // Это не требует вырезать части персонажа и не создаёт двойных контуров.
+            val meshCols = 8
+            val meshRows = 12
+            val mesh = FloatArray((meshCols + 1) * (meshRows + 1) * 2)
+            val hairPhase = sin(elapsed * if (isDancing) 8.5f else 2.1f)
+            val skirtPhase = sin(elapsed * if (isDancing) 10.5f else 2.7f)
+            val hairAmplitude = if (isDancing) 3.2f else 0.85f
+            val skirtAmplitude = if (isDancing) 4.2f else 1.1f
+            for (row in 0..meshRows) {
+                val v = row.toFloat() / meshRows
+                for (col in 0..meshCols) {
+                    val u = col.toFloat() / meshCols
+                    val edge = abs(u * 2f - 1f)
+                    val hairBand = (1f - abs(v - 0.16f) / 0.19f).coerceIn(0f, 1f)
+                    val skirtBand = (1f - abs(v - 0.64f) / 0.16f).coerceIn(0f, 1f)
+                    val hairDx = hairPhase * hairAmplitude * hairBand * edge
+                    val skirtDx = skirtPhase * skirtAmplitude * skirtBand * edge
+                    val skirtDy = abs(skirtPhase) * skirtAmplitude * 0.16f * skirtBand * edge
+                    val index = (row * (meshCols + 1) + col) * 2
+                    mesh[index] = target.left + u * target.width() + hairDx + skirtDx
+                    mesh[index + 1] = target.top + v * target.height() + skirtDy
+                }
+            }
+            canvas.drawBitmapMesh(sprite, meshCols, meshRows, mesh, 0, null, 0, p)
+
+            // Пока исходник остаётся единым PNG, mesh-анимация даёт локальное движение
+            // волос и ткани; независимые суставы включатся автоматически, когда появятся слои.
 
             // Лёгкие линии движения возле волос и края юбки создают ощущение инерции,
             // не закрывая рисунок и не копируя его поверх самого себя.
