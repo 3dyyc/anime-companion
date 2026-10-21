@@ -207,25 +207,25 @@ private class CompanionView(context: android.content.Context) : View(context) {
             p.alpha = 255
             canvas.drawBitmap(sprite, null, target, p)
 
-            // Локальная инерция волос: слегка смещаем только верхнюю область спрайта.
-            // Это временная имитация до подготовки настоящих отдельных слоёв волос.
-            val hairSway = sin(elapsed * if (isDancing) 7.5f else 2.1f) * if (isDancing) 2.8f else 0.9f
-            canvas.save()
-            canvas.clipRect(24f, 0f, 196f, 78f)
-            canvas.rotate(hairSway * 0.45f, 110f, 64f)
-            canvas.translate(hairSway, 0f)
-            canvas.drawBitmap(sprite, null, target, p)
-            canvas.restore()
+            // Важно: не дублируем цельный спрайт внутри обрезанных областей.
+            // Такой приём создавал ореолы/двойные контуры, но не двигал отдельные части тела.
+            // Пока у персонажа один плоский PNG, движение волос и ткани передаётся
+            // небольшим наклоном/переносом всего силуэта. Независимый rig добавим слоями.
 
-            // Движение ткани юбки: небольшая инерция по ритму шага/танца.
-            // Ракурс остаётся безопасным; это не замена настоящему cloth-rig.
-            val skirtFlutter = sin(elapsed * if (isDancing) 10.5f else 3.2f) * if (isDancing) 2.2f else 0.65f
-            canvas.save()
-            canvas.clipRect(58f, 140f, 162f, 184f)
-            canvas.rotate(skirtFlutter, 110f, 153f)
-            canvas.translate(skirtFlutter * 0.35f, 0f)
-            canvas.drawBitmap(sprite, null, target, p)
-            canvas.restore()
+            // Лёгкие линии движения возле волос и края юбки создают ощущение инерции,
+            // не закрывая рисунок и не копируя его поверх самого себя.
+            p.style = Paint.Style.STROKE
+            p.strokeWidth = 1.4f
+            p.color = Color.rgb(255, 220, 240)
+            p.alpha = 115
+            val hairMotion = sin(elapsed * if (isDancing) 8f else 2.3f) * if (isDancing) 4f else 1.2f
+            canvas.drawLine(34f, 34f + hairMotion, 43f, 29f + hairMotion, p)
+            canvas.drawLine(185f, 39f - hairMotion, 194f, 34f - hairMotion, p)
+            val fabricMotion = sin(elapsed * if (isDancing) 10f else 3f) * if (isDancing) 3f else 0.8f
+            canvas.drawLine(61f, 169f + fabricMotion, 70f, 172f + fabricMotion, p)
+            canvas.drawLine(150f, 172f - fabricMotion, 159f, 169f - fabricMotion, p)
+            p.style = Paint.Style.FILL
+            p.alpha = 255
 
             // Реакции лица поверх исходного спрайта: смущение, игривость и удивление.
             // Координаты рассчитаны относительно области 220x300 с персонажем в полный рост.
