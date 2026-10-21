@@ -6,6 +6,7 @@ import android.app.NotificationManager
 import android.app.PendingIntent
 import android.app.Service
 import android.content.Intent
+import android.graphics.BitmapFactory
 import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Paint
@@ -130,6 +131,10 @@ class CompanionOverlayService : Service() {
 
 private class CompanionView(context: android.content.Context) : View(context) {
     private val p = Paint(Paint.ANTI_ALIAS_FLAG)
+    private val characterBitmap by lazy {
+        val id = resources.getIdentifier("companion_character", "drawable", context.packageName)
+        if (id == 0) null else BitmapFactory.decodeResource(resources, id)
+    }
     var isDancing = false
         private set
     var onPositionChanged: ((Int, Int) -> Unit)? = null
@@ -180,6 +185,26 @@ private class CompanionView(context: android.content.Context) : View(context) {
         val elapsed = (SystemClock.uptimeMillis() - startedAt) / 1000f
         val bounce = if (isDancing) sin(elapsed * 10f) * 8f else sin(elapsed * 2.1f) * 2.5f
         canvas.translate(0f, bounce)
+
+        // Use the custom transparent character sprite when available; otherwise retain the fallback.
+        val sprite = characterBitmap
+        if (sprite != null) {
+            val target = RectF(4f, 0f, 216f, 300f)
+            val danceScale = if (isDancing) 1f + sin(elapsed * 10f) * 0.025f else 1f
+            canvas.save()
+            canvas.scale(danceScale, danceScale, 110f, 150f)
+            p.alpha = 255
+            canvas.drawBitmap(sprite, null, target, p)
+            if (isDancing) {
+                p.color = Color.rgb(255, 158, 220)
+                canvas.drawCircle(25f, 88f + sin(elapsed * 5f) * 7f, 4f, p)
+                canvas.drawCircle(193f, 115f + sin(elapsed * 6f) * 8f, 5f, p)
+            }
+            canvas.restore()
+            canvas.restore()
+            postInvalidateDelayed(45)
+            return
+        }
 
         p.color = 0x26000000
         canvas.drawOval(RectF(40f, 276f, 184f, 296f), p)
