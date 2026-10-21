@@ -183,26 +183,41 @@ private class CompanionView(context: android.content.Context) : View(context) {
         canvas.translate((width - 220f * scale) / 2f, (height - 300f * scale) / 2f)
         canvas.scale(scale, scale)
         val elapsed = (SystemClock.uptimeMillis() - startedAt) / 1000f
-        val bounce = if (isDancing) sin(elapsed * 10f) * 8f else sin(elapsed * 2.1f) * 2.5f
+        // Мягкая idle-анимация: дыхание, перенос веса и лёгкое покачивание.
+        // В режиме танца движения становятся заметнее, но остаются плавными.
+        val bounce = if (isDancing) abs(sin(elapsed * 5f)) * -10f else sin(elapsed * 2.2f) * 2.2f
         canvas.translate(0f, bounce)
 
         // Use the custom transparent character sprite when available; otherwise retain the fallback.
         val sprite = characterBitmap
         if (sprite != null) {
             val target = RectF(4f, 0f, 216f, 300f)
-            val danceScale = if (isDancing) 1f + sin(elapsed * 10f) * 0.025f else 1f
+            val breathing = 1f + sin(elapsed * 2.4f) * 0.012f
+            val dancePulse = if (isDancing) 1f + sin(elapsed * 10f) * 0.035f else 1f
+            val bodyScaleX = breathing * dancePulse
+            val bodyScaleY = (1f - sin(elapsed * 2.4f) * 0.008f) * dancePulse
+            val sway = if (isDancing) sin(elapsed * 5f) * 5f else sin(elapsed * 1.45f) * 1.25f
+            val tilt = if (isDancing) sin(elapsed * 10f) * 4.5f else sin(elapsed * 1.1f) * 1.1f
+
             canvas.save()
-            canvas.scale(danceScale, danceScale, 110f, 150f)
+            canvas.rotate(tilt, 110f, 150f)
+            canvas.translate(sway, 0f)
+            canvas.scale(bodyScaleX, bodyScaleY, 110f, 150f)
             p.alpha = 255
             canvas.drawBitmap(sprite, null, target, p)
+
             if (isDancing) {
+                // Небольшие искорки подчёркивают танец, не закрывая персонажа.
                 p.color = Color.rgb(255, 158, 220)
+                p.alpha = 220
                 canvas.drawCircle(25f, 88f + sin(elapsed * 5f) * 7f, 4f, p)
                 canvas.drawCircle(193f, 115f + sin(elapsed * 6f) * 8f, 5f, p)
+                canvas.drawCircle(42f + sin(elapsed * 4f) * 5f, 52f, 2.5f, p)
+                canvas.drawCircle(177f, 70f + sin(elapsed * 4.5f) * 6f, 2.5f, p)
             }
             canvas.restore()
             canvas.restore()
-            postInvalidateDelayed(45)
+            postInvalidateDelayed(33)
             return
         }
 
